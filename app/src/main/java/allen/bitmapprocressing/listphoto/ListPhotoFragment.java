@@ -35,7 +35,7 @@ public class ListPhotoFragment extends Fragment {
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         gridView = (GridView) view.findViewById(R.id.grid);
-        ListPhotoAdapter adapter = new ListPhotoAdapter();
+        ListPhotoAdapter adapter = new ListPhotoAdapter(getContext());
         gridView.setAdapter(adapter);
     }
 }
