@@ -9,6 +9,8 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.TransitionDrawable;
 import android.os.AsyncTask;
+import android.util.Log;
+import android.util.LruCache;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,11 +31,20 @@ public class ListPhotoAdapter extends BaseAdapter {
     private Bitmap mLoadingBitmap;
     int length;
     private static final int FADE_IN_TIME = 200;
+    private LruCache<String, Bitmap> mCache;
 
     public ListPhotoAdapter(Context mContext) {
         this.mContext = mContext;
         density = mContext.getResources().getDisplayMetrics().density;
         length = (int) (density * 150);
+        int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
+        int cacheSize = maxMemory / 8;
+        mCache = new LruCache<String, Bitmap>(cacheSize) {
+            @Override
+            protected int sizeOf(String key, Bitmap value) {
+                return value.getByteCount() / 1024;
+            }
+        };
     }
 
     @Override
@@ -75,6 +86,7 @@ public class ListPhotoAdapter extends BaseAdapter {
     }
 
     public class BitmapWorkerTask extends AsyncTask<Integer, Void, Bitmap> {
+
         private final WeakReference<ImageView> imageViewReference;
         private int data = 0;
 
@@ -87,13 +99,16 @@ public class ListPhotoAdapter extends BaseAdapter {
         @Override
         protected Bitmap doInBackground(Integer... params) {
             data = params[0];
-            return decodeSampledBitmapFromResource(mContext.getResources(), data, length, length);
+            Log.d("Cache", "Load bitmap from resource -" + data);
+            Bitmap bm = decodeSampledBitmapFromResource(mContext.getResources(), data, length, length);
+            addBitmaptoCache(String.valueOf(data), bm);
+            return bm;
         }
 
         // Once complete, see if ImageView is still around and set bitmap.
         @Override
         protected void onPostExecute(Bitmap bitmap) {
-            if (imageViewReference != null && bitmap != null) {
+            if (bitmap != null) {
                 final ImageView imageView = imageViewReference.get();
                 if (imageView != null) {
                     setImageDrawable(imageView, new BitmapDrawable(mContext.getResources(), bitmap));
@@ -104,13 +119,19 @@ public class ListPhotoAdapter extends BaseAdapter {
     }
 
     public void loadBitmap(int resId, ImageView imageView) {
-        if (cancelPotentialWork(resId, imageView)) {
-            final BitmapWorkerTask task = new BitmapWorkerTask(imageView);
-            final AsyncDrawable asyncDrawable =
-                    new AsyncDrawable(mContext.getResources(), mLoadingBitmap, task);
-            setLoadingImage(R.drawable.empty_photo);
-            imageView.setImageDrawable(asyncDrawable);
-            task.execute(resId);
+        Bitmap bm = getBitmapfromCache(String.valueOf(resId));
+        if (bm != null) {
+            setImageDrawable(imageView, new BitmapDrawable(mContext.getResources(), bm));
+            Log.d("Cache", "Load bitmap from Cache " + String.valueOf(resId));
+        } else {
+            if (cancelPotentialWork(resId, imageView)) {
+                final BitmapWorkerTask task = new BitmapWorkerTask(imageView);
+                final AsyncDrawable asyncDrawable =
+                        new AsyncDrawable(mContext.getResources(), mLoadingBitmap, task);
+                setLoadingImage(R.drawable.empty_photo);
+                imageView.setImageDrawable(asyncDrawable);
+                task.execute(resId);
+            }
         }
     }
 
@@ -199,5 +220,16 @@ public class ListPhotoAdapter extends BaseAdapter {
 
         imageView.setImageDrawable(td);
         td.startTransition(FADE_IN_TIME);
+    }
+
+    private Bitmap getBitmapfromCache(String key) {
+        return mCache.get(key);
+    }
+
+    public void addBitmaptoCache(String key, Bitmap bitmap) {
+        Log.d("Cache", "Save bitmap to cache " + key);
+        if (getBitmapfromCache(key) == null) {
+            mCache.put(key, bitmap);
+        }
     }
 }
