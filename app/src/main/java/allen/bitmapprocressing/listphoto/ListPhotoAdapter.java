@@ -159,21 +159,10 @@ public class ListPhotoAdapter extends BaseAdapter {
         final int height = options.outHeight;
         final int width = options.outWidth;
         int inSampleSize = 1;
-
-        if (height > reqHeight || width > reqWidth) {
-
-            final int halfHeight = height / 2;
-            final int halfWidth = width / 2;
-
-            // Calculate the largest inSampleSize value that is a power of 2 and keeps both
-            // height and width larger than the requested height and width.
-            while ((halfHeight / inSampleSize) > reqHeight
-                    && (halfWidth / inSampleSize) > reqWidth) {
-                inSampleSize *= 2;
-            }
-        }
-
-        return inSampleSize;
+        int a = (int) Math.sqrt(height / reqHeight);
+        int b = (int) Math.sqrt(width / reqWidth);
+        int log = a >= b ? b : a;
+        return (int) (inSampleSize * Math.pow(2, log));
     }
 
     public static Bitmap decodeSampledBitmapFromResource(Resources res, int resId,
@@ -181,8 +170,8 @@ public class ListPhotoAdapter extends BaseAdapter {
 
         // First decode with inJustDecodeBounds=true to check dimensions
         final BitmapFactory.Options options = new BitmapFactory.Options();
-//        options.inJustDecodeBounds = true;
-//        BitmapFactory.decodeResource(res, resId, options);
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeResource(res, resId, options);
 
         // Calculate inSampleSize
 //        options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
@@ -214,9 +203,6 @@ public class ListPhotoAdapter extends BaseAdapter {
                         new ColorDrawable(mContext.getResources().getColor(android.R.color.transparent)),
                         drawable
                 });
-        // Set background to loading bitmap
-//        imageView.setBackgroundDrawable(
-//                new BitmapDrawable(mContext.getResources(), mLoadingBitmap));
 
         imageView.setImageDrawable(td);
         td.startTransition(FADE_IN_TIME);
