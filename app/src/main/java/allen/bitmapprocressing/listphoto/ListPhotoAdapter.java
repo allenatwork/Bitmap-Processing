@@ -54,44 +54,16 @@ public class ListPhotoAdapter extends BaseAdapter {
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
 
-        int inSampleSize = 1;
-        ViewHolder vh = null;
+        ViewHolder vh;
         if (convertView == null) {
             convertView = LayoutInflater.from(parent.getContext()).inflate(R.layout.photo_item_view, parent, false);
             vh = new ViewHolder(convertView);
             convertView.setTag(vh);
         } else vh = (ViewHolder) convertView.getTag();
 
-        // Image Processing
-//        BitmapFactory.Options options = new BitmapFactory.Options();
-//        options.inJustDecodeBounds = true;
-//        BitmapFactory.decodeResource(parent.getContext().getResources(), Images.limage[position], options);
-//        int imageWidth = options.outWidth;
-//        int imageHeight = options.outHeight;
-//
-//        if (imageHeight > length || imageWidth > length) {
-//            final int hh = imageHeight / 2;
-//            final int hw = imageWidth / 2;
-//
-//            while (hh / inSampleSize > length && hw / inSampleSize > length) {
-//                inSampleSize *= 2;
-//            }
-//        }
-//        options.inSampleSize = inSampleSize;
-//        options.inJustDecodeBounds = false;
-//        Bitmap bm = BitmapFactory.decodeResource(parent.getContext().getResources(), Images.limage[position], options);
-
-//        vh.imageView.setImageBitmap(bm);
-        //=================================
-
         loadBitmap(Images.limage[position], vh.imageView);
 
         return convertView;
-    }
-
-    @Override
-    public boolean hasStableIds() {
-        return true;
     }
 
     private static class ViewHolder {
@@ -102,28 +74,13 @@ public class ListPhotoAdapter extends BaseAdapter {
         }
     }
 
-    static class AsyncDrawable extends BitmapDrawable {
-        private final WeakReference<BitmapWorkerTask> bitmapWorkerTaskReference;
-
-        public AsyncDrawable(Resources res, Bitmap bitmap,
-                             BitmapWorkerTask bitmapWorkerTask) {
-            super(res, bitmap);
-            bitmapWorkerTaskReference =
-                    new WeakReference<BitmapWorkerTask>(bitmapWorkerTask);
-        }
-
-        public BitmapWorkerTask getBitmapWorkerTask() {
-            return bitmapWorkerTaskReference.get();
-        }
-    }
-
-    class BitmapWorkerTask extends AsyncTask<Integer, Void, Bitmap> {
+    public class BitmapWorkerTask extends AsyncTask<Integer, Void, Bitmap> {
         private final WeakReference<ImageView> imageViewReference;
         private int data = 0;
 
         public BitmapWorkerTask(ImageView imageView) {
             // Use a WeakReference to ensure the ImageView can be garbage collected
-            imageViewReference = new WeakReference<ImageView>(imageView);
+            imageViewReference = new WeakReference<>(imageView);
         }
 
         // Decode image in background.
